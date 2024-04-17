@@ -76,3 +76,12 @@ services:
       - 8888:8888
       - 7004:7004
       - 5005:5005
+
+  flow-management-tool:
+    depends_on:
+      - corda
+    build:
+      context: ./FlowManagementUI
+      dockerfile: Dockerfile
+    ports:
+      - 5000:5000
