@@ -1,6 +1,6 @@
-# release-V5.2 cordapp-template-kotlin
+# cordapp-template-kotlin (Corda v5.2)
 
-This template repository provides:
+## This template repository provides:
 
 - A pre-setup Cordapp Project which you can use as a starting point to develop your own prototypes.
 
@@ -18,8 +18,27 @@ This template repository provides:
 
 To find out how to use the template, please refer to the *CorDapp Template* subsection within the *Developing Applications* section in the latest Corda 5 documentation at https://docs.r3.com/
 
+## Prerequisite
+1. Java 17
+2. Corda-cli (v5.2), Download [here](https://github.com/corda/corda-runtime-os/releases/tag/release-5.2.0.0). You need to install Java 17 first.
+3. Docker Desktop
 
-## Chat app
+## Setting up
+
+1. We will begin our test deployment with clicking the `startCorda`. This task will load up the combined Corda workers in docker.
+   A successful deployment will allow you to open the REST APIs at: https://localhost:8888/api/v5_2/swagger#. You can test out some of the
+   functions to check connectivity. (GET /cpi function call should return an empty list as for now.)
+2. We will now deploy the cordapp with a click of `vNodeSetup` task. Upon successful deployment of the CPI, the GET /cpi function call should now return the meta data of the cpi you just upload
+
+## Flow Management Tool[Optional]
+We had developed a simple GUI for you to interact with the cordapp. You can access the website by using https://localhost:5000 or https://127.0.0.1:5000. The Flow Management Tool will automatically connect with the CorDapp running locally from your Corda cluster. You can test the connection by click on the dropdown list at the Flow Initiator section. You should be able to see the vNodes of your started CorDapp. You can easily trigger and query a Corda flow. 
+
+
+
+![image](https://github.com/corda/cordapp-template-kotlin/assets/51169685/88e6568e-49b4-46a8-b1e1-34140bcf03a9)
+
+
+## Running the Chat app
 We have built a simple one to one chat app to demo some functionalities of the next gen Corda platform.
 
 In this app you can:
@@ -28,16 +47,6 @@ In this app you can:
 3. Individually query out the history of one chat entry. `GetChatFlowArgs`
 4. Continue chatting within the chat entry with the counterparty. `UpdateChatFlow`
 
-### Prerequisites
-- Corda CLI; version should match that of the Corda combined worker image used
-- Docker
-
-### Setting up
-
-1. We will begin our test deployment with clicking the `startCorda`. This task will load up the combined Corda workers in docker.
-   A successful deployment will allow you to open the REST APIs at: https://localhost:8888/api/v5_2/swagger#. You can test out some of the
-   functions to check connectivity. (GET /cpi function call should return an empty list as for now.)
-2. We will now deploy the cordapp with a click of `vNodeSetup` task. Upon successful deployment of the CPI, the GET /cpi function call should now return the meta data of the cpi you just upload
 
 
 
