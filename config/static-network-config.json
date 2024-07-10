@@ -4,7 +4,7 @@
     "cpi" : "MyCorDapp"
   },
   {
-    "x500Name" : "CN=Bob, OU=Test Dept, O=R3, L=London, C=GB",
+    "x500Name" : "CN=WorldCharity, OU=Test Dept, O=R3, L=London, C=GB",
     "cpi" : "MyCorDapp"
   },
   {
