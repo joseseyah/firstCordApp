@@ -1,0 +1,316 @@
+#!/bin/sh
+
+response=$(curl -k -u admin:admin -X 'GET' 'https://localhost:8888/api/v5_2/virtualnode' -H 'accept: application/json')
+
+
+world_charity_info=$(echo $response | jq -r '.virtualNodes[] | select(.holdingIdentity.x500Name | contains("WorldCharity"))')
+world_charity_hash=$(echo $world_charity_info | jq -r '.holdingIdentity.shortHash')
+world_charity_x500Name=$(echo $world_charity_info | jq -r '.holdingIdentity.x500Name')
+
+dave_hash=$(echo $response | jq -r '.virtualNodes[] | select(.holdingIdentity.x500Name | contains("Dave")) | .holdingIdentity.shortHash')
+alice_hash=$(echo $response | jq -r '.virtualNodes[] | select(.holdingIdentity.x500Name | contains("Alice")) | .holdingIdentity.shortHash')
+charlie_hash=$(echo $response | jq -r '.virtualNodes[] | select(.holdingIdentity.x500Name | contains("Charlie")) | .holdingIdentity.shortHash')
+notary_service_hash=$(echo $response | jq -r '.virtualNodes[] | select(.holdingIdentity.x500Name | contains("NotaryService")) | .holdingIdentity.shortHash')
+
+sleep 3
+
+#------Creating the project--------
+
+curl -k -u admin:admin -X 'POST' \
+  "https://localhost:8888/api/v5_2/flow/$world_charity_hash" \
+  -H 'accept: application/json' \
+  -H 'Authorization: Basic YWRtaW46YWRtaW4=' \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "clientRequestId": "create-project-1",
+    "flowClassName": "com.r3.developers.charity.workflows.ProjectCreationFlow",
+    "requestBody": {
+        "totalBudget": 0,
+        "projectName": "Housing",
+        "projectDescription": "Building homes",
+        "charityName": "CN=WorldCharity, OU=Test Dept, O=R3, L=London, C=GB",
+        "notary": "CN=NotaryService, OU=Test Dept, O=R3, L=London, C=GB"
+    }
+}' > /dev/null 2>&1
+sleep 6
+
+curl -k -u admin:admin -X 'POST' \
+  "https://localhost:8888/api/v5_2/flow/$world_charity_hash" \
+  -H 'accept: application/json' \
+  -H 'Authorization: Basic YWRtaW46YWRtaW4=' \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "clientRequestId": "get-ID-name",
+    "flowClassName": "com.r3.developers.charity.workflows.GetProjectIDGivenProjectName",
+    "requestBody": {
+        "projectName": "Housing"
+    }
+}' > /dev/null 2>&1
+sleep 10
+
+response=$(curl -k -u admin:admin -X 'GET' \
+  "https://localhost:8888/api/v5_2/flow/$world_charity_hash/get-ID-name" \
+  -H 'accept: application/json' \
+  -H 'Authorization: Basic YWRtaW46YWRtaW4=')
+
+flow_result=$(echo $response | jq -r '.flowResult')
+projectID=$(echo $flow_result | jq -r '.projectID')
+
+
+
+sleep 5
+
+response=$(curl -k -u admin:admin -X 'POST' \
+  "https://localhost:8888/api/v5_2/flow/$world_charity_hash" \
+  -H 'accept: application/json' \
+  -H 'Authorization: Basic YWRtaW46YWRtaW4=' \
+  -H 'Content-Type: application/json' \
+  -d "{
+    \"clientRequestId\": \"get-create-1\",
+    \"flowClassName\": \"com.r3.developers.charity.workflows.GetProjectDetailsFlow\",
+    \"requestBody\": {
+        \"projectID\": \"$projectID\"
+    }
+}")
+
+
+sleep 5
+
+response2=$(curl -k -u admin:admin -X 'GET' \
+  "https://localhost:8888/api/v5_2/flow/$world_charity_hash/get-create-1" \
+  -H 'accept: application/json' \
+  -H 'Authorization: Basic YWRtaW46YWRtaW4=')
+
+flow_result=$(echo $response2 | jq -r '.flowResult')
+projectName=$(echo $flow_result | jq -r '.projectName')
+projectDescription=$(echo $flow_result | jq -r '.projectDescription')
+totalBudget=$(echo $flow_result | jq -r '.totalBudget')
+
+echo "----- $projectName Project Creation-----"
+
+echo ""
+echo "Project Name: $projectName"
+echo "Project Description: $projectDescription"
+echo "Remaining Funds: $totalBudget"
+echo ""
+
+
+curl -k -u admin:admin -X 'POST' \
+  "https://localhost:8888/api/v5_2/flow/$world_charity_hash" \
+  -H 'accept: application/json' \
+  -H 'Authorization: Basic YWRtaW46YWRtaW4=' \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "clientRequestId": "get-total-1",
+    "flowClassName": "com.r3.developers.charity.workflows.CharityTotal",
+    "requestBody": {
+        "charity": "CN=WorldCharity, OU=Test Dept, O=R3, L=London, C=GB"
+    }
+}' > /dev/null 2>&1
+
+sleep 5
+
+response=$(curl -k -u admin:admin -X 'GET' \
+  "https://localhost:8888/api/v5_2/flow/$world_charity_hash/get-total-1" \
+  -H 'accept: application/json' \
+  -H 'Authorization: Basic YWRtaW46YWRtaW4=')
+
+
+sleep 3
+
+# Extract the flowResult field and parse it
+flow_result=$(echo $response | jq -r '.flowResult')
+total_donations=$(echo $flow_result | jq -r '.totalDonations')
+allocation_funds=$(echo $flow_result | jq -r '.allocationFunds')
+remaining_funds=$(echo $flow_result | jq -r '."Remaining Funds"')
+
+# Print the extracted values
+echo "-----Charity Bank Account-----"
+echo ""
+echo "Total Donations: $total_donations"
+echo "Allocation Funds: $allocation_funds"
+echo "Remaining Funds: $remaining_funds"
+
+echo ""
+echo "*Charlie has donated £150*"
+echo ""
+curl -k -u admin:admin -X 'POST' \
+  "https://localhost:8888/api/v5_2/flow/$charlie_hash" \
+  -H 'accept: application/json' \
+  -H 'Authorization: Basic YWRtaW46YWRtaW4=' \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "clientRequestId": "donate-1",
+    "flowClassName": "com.r3.developers.charity.workflows.DonationFlow",
+    "requestBody": {
+        "amount": 150,
+        "holder": "CN=WorldCharity, OU=Test Dept, O=R3, L=London, C=GB"
+    }
+}' > /dev/null 2>&1
+
+echo ""
+echo ""
+
+sleep 5
+
+
+
+curl -k -u admin:admin -X 'POST' \
+  "https://localhost:8888/api/v5_2/flow/$world_charity_hash" \
+  -H 'accept: application/json' \
+  -H 'Authorization: Basic YWRtaW46YWRtaW4=' \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "clientRequestId": "get-total-2",
+    "flowClassName": "com.r3.developers.charity.workflows.CharityTotal",
+    "requestBody": {
+        "charity": "CN=WorldCharity, OU=Test Dept, O=R3, L=London, C=GB"
+    }
+}' > /dev/null 2>&1
+
+sleep 5
+
+response=$(curl -k -u admin:admin -X 'GET' \
+  "https://localhost:8888/api/v5_2/flow/$world_charity_hash/get-total-2" \
+  -H 'accept: application/json' \
+  -H 'Authorization: Basic YWRtaW46YWRtaW4=')
+
+
+
+sleep 2
+
+# Extract the flowResult field and parse it
+flow_result=$(echo $response | jq -r '.flowResult')
+total_donations=$(echo $flow_result | jq -r '.totalDonations')
+allocation_funds=$(echo $flow_result | jq -r '.allocationFunds')
+remaining_funds=$(echo $flow_result | jq -r '."Remaining Funds"')
+
+# Print the extracted values
+echo "-----Charity Bank Account-----"
+echo ""
+echo "Total Donations: $total_donations"
+echo "Allocation Funds: $allocation_funds"
+echo "Remaining Funds: $remaining_funds"
+echo ""
+
+#Experimental ------------------------------------------------------------------------------
+
+sleep 7
+echo "*Charity allocating funds to project*"
+
+curl -k -u admin:admin -X 'POST' \
+  "https://localhost:8888/api/v5_2/flow/$world_charity_hash" \
+  -H 'accept: application/json' \
+  -H 'Authorization: Basic YWRtaW46YWRtaW4=' \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "clientRequestId": "allocate-to-housing",
+    "flowClassName": "com.r3.developers.charity.workflows.AllocateFunds",
+    "requestBody": {
+        "amount": 150,
+        "projectID": "'"$projectID"'",
+        "charityName": "CN=WorldCharity, OU=Test Dept, O=R3, L=London, C=GB"
+    }
+}' > /dev/null 2>&1
+
+echo ""
+
+sleep 7
+
+curl -k -u admin:admin -X 'POST' \
+  "https://localhost:8888/api/v5_2/flow/$world_charity_hash" \
+  -H 'accept: application/json' \
+  -H 'Authorization: Basic YWRtaW46YWRtaW4=' \
+  -H 'Content-Type: application/json' \
+  -d "{
+    \"clientRequestId\": \"get-create-2\",
+    \"flowClassName\": \"com.r3.developers.charity.workflows.GetProjectDetailsFlow\",
+    \"requestBody\": {
+        \"projectID\": \"$projectID\"
+    }
+}" > /dev/null 2>&1
+
+sleep 7
+
+
+response3=$(curl -k -u admin:admin -X 'GET' \
+  "https://localhost:8888/api/v5_2/flow/$world_charity_hash/get-create-2" \
+  -H 'accept: application/json' \
+  -H 'Authorization: Basic YWRtaW46YWRtaW4=')
+
+
+# Extract the flowResult field, which is a JSON string
+flowResult=$(echo $response3 | jq -r '.flowResult')
+
+# Parse the flowResult JSON string to extract project details
+projectNameafterAllocation=$(echo $flowResult | jq -r '.projectName')
+projectDescriptionafterAllocation=$(echo $flowResult | jq -r '.projectDescription')
+totalBudgetafterAllocation=$(echo $flowResult | jq -r '.totalBudget')
+donors=$(echo $flowResult | jq -r '.donors[]')
+
+echo "---Project Details after Allocation of Funds---"
+echo ""
+echo "Project Name: $projectNameafterAllocation"
+echo "Project Description: $projectDescriptionafterAllocation"
+echo "Remaining Funds: $totalBudgetafterAllocation"
+echo "Donors to project: $donors"
+echo ""
+
+sleep 7
+
+
+
+curl -k -u admin:admin -X 'POST' \
+  "https://localhost:8888/api/v5_2/flow/$world_charity_hash" \
+  -H 'accept: application/json' \
+  -H 'Authorization: Basic YWRtaW46YWRtaW4=' \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "clientRequestId": "get-total-3",
+    "flowClassName": "com.r3.developers.charity.workflows.CharityTotal",
+    "requestBody": {
+        "charity": "CN=WorldCharity, OU=Test Dept, O=R3, L=London, C=GB"
+    }
+}' > /dev/null 2>&1
+
+sleep 5
+
+response=$(curl -k -u admin:admin -X 'GET' \
+  "https://localhost:8888/api/v5_2/flow/$world_charity_hash/get-total-3" \
+  -H 'accept: application/json' \
+  -H 'Authorization: Basic YWRtaW46YWRtaW4=')
+
+
+
+sleep 2
+
+# Extract the flowResult field and parse it
+flow_result=$(echo $response | jq -r '.flowResult')
+total_donations=$(echo $flow_result | jq -r '.totalDonations')
+allocation_funds=$(echo $flow_result | jq -r '.allocationFunds')
+remaining_funds=$(echo $flow_result | jq -r '."Remaining Funds"')
+
+# Print the extracted values
+
+echo "-----Charity Bank Account-----"
+
+echo ""
+echo "Total Donations: $total_donations"
+echo "Allocation Funds: $allocation_funds"
+echo "Remaining Funds: $remaining_funds"
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

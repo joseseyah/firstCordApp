@@ -1,0 +1,40 @@
+#!/bin/sh
+echo "Testing Donations"
+
+
+curl -k -u admin:admin  -X 'POST' \
+  'https://localhost:8888/api/v5_2/flow/80D65D8D1924' \
+  -H 'accept: application/json' \
+  -H 'Authorization: Basic YWRtaW46YWRtaW4=' \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "clientRequestId": "donate-1",
+    "flowClassName": "com.r3.developers.charity.workflows.DonationFlow",
+    "requestBody": {
+        "amount":123,
+        "holder":"CN=WorldCharity, OU=Test Dept, O=R3, L=London, C=GB"
+        }
+}'
+
+sleep 5
+
+
+curl -k -u admin:admin  -X 'POST' \
+  'https://localhost:8888/api/v5_2/flow/2CACAA03ADC0' \
+  -H 'accept: application/json' \
+  -H 'Authorization: Basic YWRtaW46YWRtaW4=' \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "clientRequestId": "get-total-1",
+    "flowClassName": "com.r3.developers.charity.workflows.CharityTotal",
+    "requestBody": {
+        "charity": "CN=WorldCharity, OU=Test Dept, O=R3, L=London, C=GB"
+    }
+}'
+
+sleep 5
+
+curl -X 'GET' \
+  'https://localhost:8888/api/v5_2/flow/2CACAA03ADC0/get-total-1' \
+  -H 'accept: application/json' \
+  -H 'Authorization: Basic YWRtaW46YWRtaW4='
