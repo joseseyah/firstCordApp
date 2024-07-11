@@ -14,12 +14,13 @@ class DonationContract : Contract {
                 require(transaction.outputContractStates.size == 1) {
                     "This transaction should only have one donation state as output"
                 }
-                require(output.amount > 0){
-                    "The amount sent should be greater than 0"
+                require(output.amount != 0){
+                    "The amount sent cannot be zero"
                 }
                 require(output.donor != output.charity){
                     "Donor cannot donate to itself and try to pose as a charity"
                 }
+
 
 
             }

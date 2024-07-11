@@ -21,6 +21,7 @@ class ProjectContract : Contract {
                     "The project Description cannot be blank"
                 }
 
+
             }
 
             is CharityCommands.Allocate ->{
@@ -29,6 +30,10 @@ class ProjectContract : Contract {
                 require(output.totalBudget > input.totalBudget){
                     "The total output must be larger than the input"
                 }
+                require(output.donors.isNotEmpty()){
+                    "The allocation needs to be attached with a donor"
+                }
+
             }
 
             else -> {
